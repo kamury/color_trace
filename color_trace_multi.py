@@ -45,6 +45,7 @@ import multiprocessing
 import queue
 import tempfile
 import time
+import cv2
 
 from svg_stack import svg_stack
 
@@ -804,11 +805,20 @@ def color_trace_multi(inputs, outputs, colors, processcount, quantization='mc', 
 
     try:
         # so for each input and (dir-appended) output...
-        for index, (i, o) in enumerate(zip(inputs, outputs)):
-            verbose(i, ' -> ', o)
+        for index, (i, o) in enumerate(zip(inputs, outputs)):            
+            
+            # Denoising
+            cv_img = cv2.imread(i)
+            blurred = cv2.fastNlMeansDenoisingColored(cv_img, None,10,10,7,21)
+            denoising = os.path.abspath(os.path.join(tmp, '0-denoised.png'))
+            cv2.imwrite(denoising,blurred)
+            
+            print(denoising)
+            
+            verbose(denoising, ' -> ', o)
 
             # add a job to the first job queue
-            q1.put({ 'input': i, 'output': o, 'findex': index })
+            q1.put({ 'input': denoising, 'output': o, 'findex': index })
 
 
         # show progress until all jobs have been completed
